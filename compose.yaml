@@ -1,0 +1,30 @@
+services:
+  ###> doctrine/doctrine-bundle ###
+  database:
+    image: mysql:8.0.33-debian
+    container_name: db_symfony
+    #command: --default-authentication-plugin=mysql_native_password #not recommended
+    restart: always
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-app}
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - 3307:3306
+    networks:
+      - app_net
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: pma_symfony
+    links:
+      - database
+    environment:
+      PMA_HOST: db_symfony:3306
+      PMA_PORT: 8007
+    restart: always
+    ports:
+      - 8007:80
+    networks:
+      - app_net
+
+networks:
+  app_net:

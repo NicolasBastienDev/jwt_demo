@@ -1,0 +1,67 @@
+security:
+  # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
+  password_hashers:
+    Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: "auto"
+    # App\Entity\User: "auto"
+  # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
+  providers:
+    app_user_provider:
+      entity:
+        class: App\Entity\User
+        property: email
+    jwt:
+      lexik_jwt:
+        class: App\Entity\User
+  firewalls:
+    dev:
+      pattern: ^/(_(profiler|wdt)|css|images|js)/
+      security: false
+    auth_fw:
+      provider: app_user_provider
+      pattern: ^/api/auth/(login|logout|refresh|init)$
+      stateless: true
+      user_checker: App\Security\UserChecker
+      json_login:
+        check_path: auth_login
+        success_handler: lexik_jwt_authentication.handler.authentication_success
+        failure_handler: lexik_jwt_authentication.handler.authentication_failure
+      logout:
+        path: auth_logout
+
+    api_root:
+      security: false
+      pattern: ^/api$
+
+    api:
+      provider: jwt
+      pattern: ^/api
+      stateless: true
+      jwt: ~
+
+  role_hierarchy:
+    ROLE_GLOBAL_SITE_MANAGER: ROLE_SITE_MANAGER
+    ROLE_GLOBAL_USER_MANAGER: ROLE_USER_MANAGER
+    ROLE_ADMIN: [ROLE_GLOBAL_USER_MANAGER, ROLE_GLOBAL_SITE_MANAGER, ROLE_USER]
+    ROLE_SUPER_ADMIN: ROLE_ADMIN
+
+  # Note: Only the *first* access control that matches will be used
+  access_control:
+    - {
+        path: ^/api/auth/(signin|login|refresh|logout|init),
+        roles: PUBLIC_ACCESS,
+      }
+    - { path: ^/api$, roles: PUBLIC_ACCESS }
+    - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
+
+when@test:
+  security:
+    password_hashers:
+      # By default, password hashers are resource intensive and take time. This is
+      # important to generate secure password hashes. In tests however, secure hashes
+      # are not important, waste resources and increase test times. The following
+      # reduces the work factor to the lowest possible values.
+      Symfony\Component\SecurityCore\User\PasswordAuthenticatedUserInterface:
+        cost: 4 # Lowest possible value for bcrypt
+        algorithm: auto
+        memory_cost: 10 # Lowest possible value for argon
+        time_cost: 3 # Lowest possible value for argon
